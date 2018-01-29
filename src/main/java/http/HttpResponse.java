@@ -11,12 +11,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static http.MethodHandler.fillHeaders;
+
 public class HttpResponse {
     private static final Logger log = LogManager.getLogger(HttpResponse.class);
-    private static final String VERSION = "HTTP/1.1";
     public static final byte[] EMPTY_BYTES = new byte[0];
 
-    private static final Map<HttpMethod, MethodHandler> resolvers;
+    private static final Map<HttpMethod, MethodHandler> handlers;
 
     private List<String> headers = new ArrayList<>();
     private byte[] body;
@@ -25,15 +26,14 @@ public class HttpResponse {
         Map<HttpMethod, MethodHandler> map = new EnumMap<>(HttpMethod.class);
 
         map.put(HttpMethod.GET, HttpResponse::processGET);
-        map.put(HttpMethod.POST, HttpResponse::processPOST);
 
-        resolvers = Collections.unmodifiableMap(map);
+        handlers = Collections.unmodifiableMap(map);
     }
 
 
     private HttpResponse(HttpRequest req) {
 
-        MethodHandler handler = resolvers.getOrDefault(req.getMethod(), HttpResponse::emptyHandler);
+        MethodHandler handler = handlers.getOrDefault(req.getMethod(), HttpResponse::emptyHandler);
 
         body = handler.apply(req, headers);
 
@@ -44,12 +44,6 @@ public class HttpResponse {
      */
     public static HttpResponse from(HttpRequest req) {
         return new HttpResponse(req);
-    }
-
-    private static void fillHeaders(List<String> headers, HttpStatus status) {
-        headers.add(HttpResponse.VERSION + " " + status.toString());
-        headers.add("Server: Simple Http Server");
-        headers.add("Connection: close");
     }
 
     private static byte[] processGET(HttpRequest req, List<String> headers) {
@@ -65,7 +59,7 @@ public class HttpResponse {
                 // working with a file
                 res = Files.readAllBytes(path);
             } else {
-                // TODO show directory structure in templated html
+                // TODO show directory contents in templated html
                 res = ("TODO: Entries of a directory: " + path.toAbsolutePath()).getBytes();
             }
 
@@ -74,10 +68,6 @@ public class HttpResponse {
             log.error("", e);
         }
         return res;
-    }
-
-    private static byte[] processPOST(HttpRequest request, List<String> headers) {
-        return null;
     }
 
     private static byte[] emptyHandler(HttpRequest request, List<String> headers) {
