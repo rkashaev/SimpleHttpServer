@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.nio.file.Paths;
 
 public class Server {
     private static final Logger log = LogManager.getLogger(Server.class);
@@ -12,10 +13,12 @@ public class Server {
 
     public static void main(String[] args) {
         try (ServerSocket ss = new ServerSocket(DEFAULT_PORT)) {
-            log.info("Server started");
-//            while (true) {
-            new Thread(new ClientSession(ss.accept())).start();
-//            }
+            log.info("Server started and made {} to be current document root", Paths.get(".").toAbsolutePath());
+
+            while (true) {
+                new Thread(new ClientSession(ss.accept())).start();
+            }
+
         } catch (IOException e) {
             log.error("", e);
         }
